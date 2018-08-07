@@ -38,12 +38,14 @@ http:
     POST
 - 请求参数
 请求参数以json表示，携带 username 和 password 成员
+
 - 调用方法示例
-  ```
+```
 curl -X POST 127.0.0.1:9066/api/auth -d '{"username":"meeting","password":"abcd.1234"}'
 ```
+
 - 返回结果示例
-  ```
+```
 {
   "err_code": 0,
   "err_msg": "ok",
@@ -74,10 +76,12 @@ curl -X POST 127.0.0.1:9066/api/auth -d '{"username":"meeting","password":"abcd.
     POST
 - 请求参数
 请求参数以json表示，设置空的json对象即可，即：{}
+
 - 调用方法示例
-  ```
+```
 curl -X POST 127.0.0.1:9066/api/list -d '{}'
 ```
+
 - 返回结果示例
 ```
 {
