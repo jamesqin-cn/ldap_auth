@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+
 	"github.com/jamesqin-cn/ldap_auth/models"
 	"github.com/jamesqin-cn/ldap_auth/proto"
 )
@@ -8,7 +10,7 @@ import (
 type ApiController struct {
 }
 
-func (ctl *ApiController) Auth(req *proto.AuthRequest) (reply *proto.AuthReply) {
+func (ctl *ApiController) Auth(ctx context.Context, req *proto.AuthRequest) (reply *proto.AuthReply) {
 	info, err := models.GetDefaultDataProxy().LdapModel.Auth(req.Username, req.Password)
 	if err != nil {
 		return &proto.AuthReply{
@@ -24,7 +26,7 @@ func (ctl *ApiController) Auth(req *proto.AuthRequest) (reply *proto.AuthReply) 
 	}
 }
 
-func (ctl *ApiController) List(req *proto.ListRequest) (reply *proto.ListReply) {
+func (ctl *ApiController) List(ctx context.Context, req *proto.ListRequest) (reply *proto.ListReply) {
 	list, err := models.GetDefaultDataProxy().LdapModel.ListUsers()
 	if err != nil {
 		return &proto.ListReply{

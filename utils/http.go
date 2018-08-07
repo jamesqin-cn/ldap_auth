@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -8,6 +9,14 @@ import (
 	"reflect"
 
 	"github.com/julienschmidt/httprouter"
+)
+
+const (
+	HTTP_CONTEXT_KEY_REQUEST = 0x01
+)
+
+var (
+	typeOfContext = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
 type HttpServer struct {
@@ -24,16 +33,30 @@ func NewHttpServer(host string) *HttpServer {
 	}
 }
 
+// isRequestOrContext returns true if type t is either *http.Request or Context
+func isContext(t reflect.Type) bool {
+	if t.Implements(typeOfContext) {
+		return true
+	}
+	return false
+}
+
 func HttpHandlerWrapper(method interface{}) func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	mtype := reflect.TypeOf(method)
 	mval := reflect.ValueOf(method)
 	numIn, numOut := mtype.NumIn(), mtype.NumOut()
-	if numIn != 1 || numOut != 1 {
-		log.Println("http handle function wrap by Wrap() must be the type: func (req Type) (reply Type)")
+	if numIn != 2 || numOut != 1 {
+		log.Println("http handle function wrap by Wrap() must be the type: func (ctx context.Context, req interface{}) (reply interface{})")
 		return nil
 	}
 
-	reqType := mtype.In(0)
+	ctxType := mtype.In(0)
+	reqType := mtype.In(1)
+
+	if !isContext(ctxType) {
+		log.Println("http handle function wrap by Wrap() must be the type: func (ctx context.Context, req interface{}) (reply interface{})")
+		return nil
+	}
 
 	getReqValue := func(r *http.Request, reqType reflect.Type) (reqVal reflect.Value, err error) {
 		reqVal = reflect.New(reqType.Elem())
@@ -45,13 +68,13 @@ func HttpHandlerWrapper(method interface{}) func(w http.ResponseWriter, r *http.
 	}
 
 	writeReply := func(w http.ResponseWriter, reply reflect.Value) {
-		w.Header().Set("Content-Type", "application/json")
 		html, err := json.Marshal(reply.Interface())
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "Encode response body failed", 500)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, "%s", html)
 	}
 
@@ -62,7 +85,11 @@ func HttpHandlerWrapper(method interface{}) func(w http.ResponseWriter, r *http.
 			http.Error(w, "Decode request body failed", 500)
 			return
 		}
-		args := []reflect.Value{req}
+		ctx := context.WithValue(context.Background(), HTTP_CONTEXT_KEY_REQUEST, r)
+		args := []reflect.Value{
+			reflect.ValueOf(ctx),
+			req,
+		}
 		replys := mval.Call(args)
 		reply := replys[0]
 		writeReply(w, reply)
