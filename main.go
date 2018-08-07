@@ -28,7 +28,7 @@ func main() {
 
 	apiCtl := &controllers.ApiController{}
 	server.POST("/api/auth", utils.HttpHandlerWrapper(apiCtl.Auth))
-	server.ANY("/api/list", utils.HttpHandlerWrapper(apiCtl.List))
+	server.POST("/api/list", utils.HttpHandlerWrapper(apiCtl.List))
 
 	server.RunHttpServer()
 }
